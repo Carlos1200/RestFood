@@ -1,21 +1,27 @@
 import React, { useState } from "react";
 import Layout from "../components/Layout";
 import Link from "next/link";
-import { useFormik } from "formik";
 import { useRouter } from "next/router";
+import { useFormik } from "formik";
 import * as Yup from "yup";
 import { gql, useMutation } from "@apollo/client";
+import Swal from "sweetalert2";
 
-const AUTENTICAR_USUARIO = gql`
-  mutation autenticarUsuario($input: InputAutenticarUsuario) {
-    autenticarUsuario(input: $input) {
-      token
+const NUEVO_USUARIO = gql`
+  mutation nuevoUsuario($input: InputUsuario) {
+    nuevoUsuario(input: $input) {
+      id
+      nombre
+      apellido
+      email
+      creado
     }
   }
 `;
 
-const Login = () => {
-  const [autenticarUsuario] = useMutation(AUTENTICAR_USUARIO);
+const NuevoUsuario = () => {
+  //Mutation para subir usuarios
+  const [nuevoUsuario] = useMutation(NUEVO_USUARIO);
 
   const [mensaje, guardarMensaje] = useState(null);
 
@@ -23,40 +29,36 @@ const Login = () => {
 
   const formik = useFormik({
     initialValues: {
+      nombre: "",
+      apellido: "",
       email: "",
       password: "",
     },
     validationSchema: Yup.object({
+      nombre: Yup.string().required("Se requiere un nombre de usuario"),
+      apellido: Yup.string().required("Se requiere un apellido de usuario"),
       email: Yup.string()
         .email("Ingrese un correo valido")
         .required("Se requiere un correo de usuario"),
-      password: Yup.string().required("Se requiere una contraseña de usuario"),
+      password: Yup.string()
+        .required("Se requiere una contraseña de usuario")
+        .min(6, "Por lo menos se requieren 6 caracteres"),
     }),
     onSubmit: async (valores) => {
-      const { email, password } = valores;
+      const { nombre, apellido, email, password } = valores;
       try {
-        const { data } = await autenticarUsuario({
+        const { data } = await nuevoUsuario({
           variables: {
             input: {
+              nombre,
+              apellido,
               email,
               password,
             },
           },
         });
-        guardarMensaje("Autenticando...");
-
-        setTimeout(() => {
-          //Guardar el token en localstorage
-          const { token } = data.autenticarUsuario;
-          localStorage.setItem("token", token);
-        }, 1000);
-
-        //Redireccionar hacia clientes
-
-        setTimeout(() => {
-          guardarMensaje(null);
-          router.push("/");
-        }, 2000);
+        Swal.fire("Cuenta creada", "Nuevo usuario creado", "success");
+        router.push("/login");
       } catch (error) {
         guardarMensaje(error.message.replace("Error: ", ""));
         setTimeout(() => {
@@ -76,13 +78,57 @@ const Login = () => {
 
   return (
     <Layout>
-      <h1 className='text-center mb-3 text-3xl font-light text-white'>Login</h1>
+      <h1 className='text-center mb-3 text-3xl font-light text-white'>
+        Nuevo Usuario
+      </h1>
       {mensaje && mostrarMensaje()}
       <div className='flex justify-center mt-5'>
         <div className='w-full max-w-sm'>
           <form
             className='bg-white rounded shadow-md px-8 pt-6 pb-8 mb-4'
             onSubmit={formik.handleSubmit}>
+            <div className='mb-4'>
+              <label
+                htmlFor='nombre'
+                className='block text-gray text-sm font-bold mb-2'>
+                Nombre
+              </label>
+              <input
+                type='text'
+                id='nombre'
+                placeholder='Nombre Usuario'
+                onChange={formik.handleChange}
+                onBlur={formik.handleBlur}
+                value={formik.values.nombre}
+                className='shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline'
+              />
+            </div>
+            {formik.touched.nombre && formik.errors.nombre ? (
+              <div className='my-2 bg-red-100 border-l-4 border-red-500 text-red-700 p-4'>
+                <p>{formik.errors.nombre}</p>
+              </div>
+            ) : null}
+            <div className='mb-4'>
+              <label
+                htmlFor='apellido'
+                className='block text-gray text-sm font-bold mb-2'>
+                Apellido
+              </label>
+              <input
+                type='text'
+                id='apellido'
+                placeholder='Apellido Usuario'
+                onChange={formik.handleChange}
+                onBlur={formik.handleBlur}
+                value={formik.values.apellido}
+                className='shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline'
+              />
+            </div>
+            {formik.touched.apellido && formik.errors.apellido ? (
+              <div className='my-2 bg-red-100 border-l-4 border-red-500 text-red-700 p-4'>
+                <p>{formik.errors.apellido}</p>
+              </div>
+            ) : null}
             <div className='mb-4'>
               <label
                 htmlFor='email'
@@ -127,12 +173,12 @@ const Login = () => {
             ) : null}
             <input
               type='submit'
-              value='Ingresar'
+              value='Registrarse'
               className='px-3 py-2 text-lg font-bold w-full rounded-md bg-gray-700 text-white hover:bg-gray-800 shadow-lg'
             />
             <div className='flex justify-center mt-3'>
-              <Link href='/nuevousuario'>
-                <a className='text-xl font-light'>Nueva Cuenta</a>
+              <Link href='/login'>
+                <a className='text-xl font-light'>Volver</a>
               </Link>
             </div>
           </form>
@@ -142,4 +188,4 @@ const Login = () => {
   );
 };
 
-export default Login;
+export default NuevoUsuario;

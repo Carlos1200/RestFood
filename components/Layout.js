@@ -1,8 +1,11 @@
 import React from "react";
 import Head from "next/head";
 import Barra from "./Barra";
+import { useRouter } from "next/router";
 
 const Layout = ({ children }) => {
+  const router = useRouter();
+
   return (
     <>
       <Head>
@@ -12,8 +15,16 @@ const Layout = ({ children }) => {
           rel='stylesheet'
         />
       </Head>
-      <Barra />
-      {children}
+      {router.pathname === "/login" || router.pathname === "/nuevousuario" ? (
+        <div className='bg-gray-900 min-h-screen flex flex-col justify-center items-center'>
+          <div className='w-full'>{children}</div>
+        </div>
+      ) : (
+        <>
+          <Barra />
+          {children}
+        </>
+      )}
     </>
   );
 };
